@@ -1,0 +1,122 @@
+MODIFIED FILES:
+===============
+
+Database:
+  database/init.sql                         - Added 3 new tables (research_sessions, plan_steps, findings) + indexes
+
+Backend Models:
+  backend/app/models/research.py            ✓ NEW - SQLAlchemy ORM models for research entities
+  backend/app/models/schemas.py             - Extended with Pydantic schemas for research endpoints
+  backend/app/models/__init__.py            - Exports for new models
+
+Backend Services:
+  backend/app/services/deepseek_service.py  ✓ NEW - DeepSeek AI integration (planning, scoring, script generation)
+  backend/app/services/research_service.py  ✓ NEW - Business logic orchestration
+  backend/app/services/__init__.py          - Exports
+
+Backend Routes:
+  backend/app/routes/research.py            ✓ NEW - 6 new API endpoints for research pipeline
+  backend/app/routes/__init__.py            - Minimal init
+
+Backend Core:
+  backend/app/main.py                       - Added research router import
+
+Frontend Pages:
+  frontend/app/page.tsx                     - Replaced lead form with freeform text input
+  frontend/app/dashboard/page.tsx           - Updated styling to maroon theme
+  frontend/app/research/[sessionId]/page.tsx        ✓ NEW - Research plan + findings view
+  frontend/app/research/[sessionId]/style/page.tsx  ✓ NEW - Methodology selector
+  frontend/app/research/[sessionId]/results/page.tsx ✓ NEW - Generated script display
+
+Frontend Components:
+  frontend/components/SettingsModal.tsx     ✓ NEW - API key + endpoint settings modal
+
+Frontend Layout & Styling:
+  frontend/app/layout.tsx                   - Added header with settings gear icon, state management
+  frontend/app/globals.css                  - Complete redesign: maroon theme + animations
+  frontend/tailwind.config.ts               - Maroon color palette + animation presets
+
+Frontend API:
+  frontend/lib/api.ts                       - Extended with 6 new research endpoints
+
+TOTAL FILES CHANGED: 17 modified, 8 new
+
+KEY FEATURES IMPLEMENTED:
+========================
+
+1. Freeform Prospect Input
+   - Single large textarea on homepage
+   - "Type in what you know about your prospect" heading
+   - Gradient button styling
+
+2. Research Plan Generation
+   - DeepSeek integration to create multi-step research plans
+   - Plan steps stored in DB with status tracking
+   - Frontend displays plan with progress indicators
+
+3. Findings Collection & Selection
+   - Findings displayed as selectable cards
+   - Each finding shows: summary, confidence score, relevancy score, source link
+   - User checkboxes to select relevant findings
+
+4. Methodology Selection
+   - 3 predefined frameworks: SPIN, Challenger, Sandler
+   - Custom methodology freeform option
+   - Script generation based on selected methodology
+
+5. Script Generation & Export
+   - DeepSeek generates sales script from selected findings
+   - Copy to clipboard functionality
+   - Download as .txt file
+   - Results page for easy sharing
+
+6. Settings Panel
+   - Modal overlay (gear icon in header)
+   - Inputs for DeepSeek API key and endpoints
+   - Saves to localStorage
+   - Header shows only on authenticated pages
+
+7. Visual Redesign
+   - Complete maroon + black color scheme
+   - Maroon-950 (#2a0f21) as primary dark background
+   - Gradient buttons with hover effects
+   - Smooth entrance animations (slideUp, fadeIn, scaleIn)
+   - Pulsing loader for async operations
+   - Custom maroon scrollbar styling
+
+ARCHITECTURE NOTES:
+===================
+
+Database Design:
+  - research_sessions: Main container for a research task
+  - plan_steps: Individual steps in the plan (ready for agent integration)
+  - findings: Results from agents with confidence/relevancy scoring
+  - Extended user_settings: For future API key management per user
+
+Backend Flow:
+  POST /sessions                    → Create session
+  POST /sessions/{id}/plan          → Trigger DeepSeek planning
+  GET  /sessions/{id}               → Poll session (finds plan + findings)
+  GET  /sessions/{id}/findings      → Get findings list
+  POST /sessions/{id}/findings/select → Mark findings as selected
+  POST /sessions/{id}/generate-script → Create script from selections
+
+Frontend Flow:
+  / (homepage)
+    ↓
+  /research/[sessionId] (plan display + findings selection)
+    ↓
+  /research/[sessionId]/style (methodology picker)
+    ↓
+  /research/[sessionId]/results (final script)
+
+NEXT STEPS FOR CONTINUATION:
+============================
+
+1. Test with valid DeepSeek API key
+2. Implement actual agent execution (currently plan/script are mock DeepSeek calls)
+3. Add findings to DB (currently returned by DeepSeek, not stored in findings table)
+4. Integrate settings with backend user_settings table
+5. Add WebSocket for real-time agent progress updates
+6. Implement session history/dashboard view
+7. Add error recovery and retry logic

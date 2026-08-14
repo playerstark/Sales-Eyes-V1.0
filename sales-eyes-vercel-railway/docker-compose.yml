@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: sales_eyes_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-salesstalker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-salesstalker_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-sales_stalker}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-salesstalker} -d ${POSTGRES_DB:-sales_stalker}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sales_eyes_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sales_eyes_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-salesstalker}:${POSTGRES_PASSWORD:-salesstalker_dev_pw}@database:5432/${POSTGRES_DB:-sales_stalker}
+    ports:
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - sales_eyes_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sales_eyes_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    networks:
+      - sales_eyes_net
+
+networks:
+  sales_eyes_net:
+    driver: bridge
+
+volumes:
+  pgdata:
